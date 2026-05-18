@@ -4,6 +4,7 @@ var layoutStaffGroup = require('./staff-group');
 var getLeftEdgeOfStaff = require('./get-left-edge-of-staff');
 var layoutInGrid = require('./layout-in-grid');
 var toTimeAndStaffBased = require("./to-time-and-staff-based");
+var applyCrossStaffShifts = require('./cross-staff-shifts');
 
 // This sets the "x" attribute on all the children in abctune.lines
 // It also sets the "w" and "startx" attributes on "voices"
@@ -48,6 +49,17 @@ var layout = function (renderer, abctune, width, space, expandToWidest, timeBase
 		if (abcLine.staffGroup) {
 			fixVoiceCollisions(timeBased[i])
 			//setUpperAndLowerElements(renderer, abcLine.staffGroup);
+		}
+	}
+
+	// Detect and resolve cross-staff notehead collisions in grand-staff
+	// systems.  Runs after per-voice layout (x positions are settled) and
+	// after voice-collision fixes (which may shift element x), but before
+	// the staff group's height is calculated below.
+	for (i = 0; i < abctune.lines.length; i++) {
+		abcLine = abctune.lines[i];
+		if (abcLine.staffGroup) {
+			applyCrossStaffShifts(abcLine.staffGroup);
 		}
 	}
 

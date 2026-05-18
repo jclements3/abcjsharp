@@ -155,6 +155,11 @@ AbstractEngraver.prototype.createABCStaff = function (staffgroup, abcstaff, temp
 		}
 		if (abcstaff.clef && abcstaff.clef.type === "perc")
 			voice.isPercussion = true;
+		// Record the clef's mid (absolute pitch at the middle of the staff) on
+		// the voice so the cross-staff notehead shift pass can convert each
+		// pitch's verticalPos back to an absolute concert pitch.
+		if (abcstaff.clef && abcstaff.clef.verticalPos !== undefined)
+			voice.clefMid = abcstaff.clef.verticalPos;
 		var clef = (!this.initialClef || l === 0) && createClef(abcstaff.clef, this.tuneNumber);
 		if (clef) {
 			if (v === 0 && abcstaff.barNumber) {
