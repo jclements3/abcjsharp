@@ -109,6 +109,34 @@ function rebuildStem(abselem, stem, newDir) {
 	}
 
 	flipFlag(abselem, newDir, headW);
+	flipShiftedHeads(abselem, newDir);
+}
+
+// Adjacent-diatonic-2nd noteheads carry a `printer_shift` flag from the
+// parser. create-note-head.js positions them via the direction-dependent
+// formula
+//   dir=up   →  dx = + (notehead.w - adjust)
+//   dir=down →  dx = − (notehead.w - adjust)
+// so when rebuildStem flips the stem direction we must re-sign each
+// shifted head's dx, otherwise the head lands on the wrong side of the
+// stem (a notehead floating in space, the stem missing it entirely).
+// Mirrors create-note-head.js's `shiftheadx` calculation.
+function flipShiftedHeads(abselem, newDir) {
+	if (!abselem || !abselem.heads || !abselem.abcelem) return;
+	var pitches = abselem.abcelem.pitches;
+	if (!pitches) return;
+	for (var i = 0; i < abselem.heads.length && i < pitches.length; i++) {
+		var ps = pitches[i] && pitches[i].printer_shift;
+		if (!ps) continue;
+		var head = abselem.heads[i];
+		var adjust = (ps === 'same') ? 1 : 0;
+		var newDx = (newDir === 'down') ? -head.w + adjust : head.w - adjust;
+		head.dx = newDx;
+		// stem.x is cached after the first layout pass; same fix as in
+		// rebuildStem — refresh from the new dx so the head renders where
+		// we just put it.
+		head.x = abselem.x + head.dx;
+	}
 }
 
 // Unbeamed short notes have a flag glyph (flags.u8th / flags.d8th, etc.)
