@@ -5,6 +5,7 @@ var getLeftEdgeOfStaff = require('./get-left-edge-of-staff');
 var layoutInGrid = require('./layout-in-grid');
 var toTimeAndStaffBased = require("./to-time-and-staff-based");
 var applyCrossStaffShifts = require('./cross-staff-shifts');
+var unifyGrandStaffStems = require('./unify-grand-staff-stems');
 
 // This sets the "x" attribute on all the children in abctune.lines
 // It also sets the "w" and "startx" attributes on "voices"
@@ -62,6 +63,12 @@ var layout = function (renderer, abctune, width, space, expandToWidest, timeBase
 			applyCrossStaffShifts(abcLine.staffGroup);
 		}
 	}
+
+	// Unify stem directions across the staves of a grand-staff group so
+	// that simultaneous notes in the treble and bass agree on a single
+	// holistic stem direction (standard piano-engraving convention).  Runs
+	// after the collision passes above so we operate on settled noteheads.
+	unifyGrandStaffStems(abctune.lines);
 
 	// Set the staff spacing
 	// TODO-PER: we should have been able to do this by the time we called setUpperAndLowerElements, but for some reason the "bottom" element seems to be set as a side effect of setting the X spacing.
