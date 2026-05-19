@@ -116,23 +116,24 @@ function unifyOneLine(staffGroup) {
 				if (!abselem || !abselem.heads || abselem.heads.length === 0) continue;
 				if (abselem.abcelem && abselem.abcelem.rest) continue;
 
-				// The staff-based stem-side rule is meaningful for CHORDS
-				// (multi-notehead elements) — stem side tells the harp player
-				// which hand plays the chord. A single notehead has no "set
-				// of notes" to indicate side on, and forcing a low single
-				// note's stem downward into empty space below the staff (or
-				// a high single note's upward into space above) looks wrong.
-				// For single noteheads, leave abcjs's default direction
-				// (which extends toward the staff middle).
-				if (abselem.heads.length < 2) continue;
-
+				// The staff-based stem-side rule is meaningful for "sets of
+				// notes" — either a CHORD (multi-notehead element) or a
+				// BEAMED GROUP (a sequence of notes connected by a beam).
+				// An UNBEAMED SINGLE note has no set to indicate side on,
+				// and forcing its stem away from the staff middle looks
+				// wrong; abcjs's default direction (toward the middle line)
+				// is what readers expect.
 				if (abselem.beam) {
+					// A beam is a "set of notes" — apply the staff rule.
 					beamsSeen.add(abselem.beam);
 					for (var h = 0; h < abselem.heads.length; h++) {
 						abselem.heads[h].stemDir = dir;
 					}
 					continue;
 				}
+
+				// Unbeamed: skip single noteheads, only override chords.
+				if (abselem.heads.length < 2) continue;
 
 				var stem = findStem(abselem);
 				if (!stem) continue;

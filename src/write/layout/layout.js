@@ -37,6 +37,14 @@ var layout = function (renderer, abctune, width, space, expandToWidest, timeBase
 	for (i = 0; i < abctune.lines.length; i++) {
 		abcLine = abctune.lines[i];
 		if (abcLine.staffGroup && abcLine.staffGroup.voices) {
+			// Set beam.stemsUp / per-stem direction BEFORE layoutVoice.
+			// layoutVoice calls layoutBeam → createStems which builds stem
+			// RelativeElements for beamed notes based on beam.stemsUp at that
+			// moment, and computes the beam path Y-coords from stem endpoints.
+			// If we wait until after layoutVoice to flip stems, the beam stays
+			// in the old position. So we override direction first; createStems
+			// + layoutBeam then produce stems and a beam on the correct side.
+			unifyGrandStaffStems([abcLine]);
 			for (var j = 0; j < abcLine.staffGroup.voices.length; j++)
 				layoutVoice(abcLine.staffGroup.voices[j]);
 			setUpperAndLowerElements(renderer, abcLine.staffGroup);
@@ -63,12 +71,6 @@ var layout = function (renderer, abctune, width, space, expandToWidest, timeBase
 			applyCrossStaffShifts(abcLine.staffGroup);
 		}
 	}
-
-	// Unify stem directions across the staves of a grand-staff group so
-	// that simultaneous notes in the treble and bass agree on a single
-	// holistic stem direction (standard piano-engraving convention).  Runs
-	// after the collision passes above so we operate on settled noteheads.
-	unifyGrandStaffStems(abctune.lines);
 
 	// Set the staff spacing
 	// TODO-PER: we should have been able to do this by the time we called setUpperAndLowerElements, but for some reason the "bottom" element seems to be set as a side effect of setting the X spacing.
