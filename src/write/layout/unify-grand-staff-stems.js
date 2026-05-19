@@ -31,12 +31,20 @@
 //     alone)
 
 // Find the stem RelativeElement in an un-beamed absolute element.
+// The stem RelativeElement is added via abselem.addRight() (see
+// abstract-engraver.js:767) which appends to `this.right`, NOT `this.children`.
+// Check both for safety; future versions of abcjs could reorganize.
 function findStem(abselem) {
-	if (!abselem || !abselem.children) return null;
+	if (!abselem) return null;
 	if (abselem.beam) return null; // beamed: handled separately via beam.stemsUp
-	for (var i = 0; i < abselem.children.length; i++) {
-		var ch = abselem.children[i];
-		if (ch && ch.type === 'stem') return ch;
+	var arrays = [abselem.right, abselem.children, abselem.extra];
+	for (var a = 0; a < arrays.length; a++) {
+		var arr = arrays[a];
+		if (!arr) continue;
+		for (var i = 0; i < arr.length; i++) {
+			var ch = arr[i];
+			if (ch && ch.type === 'stem') return ch;
+		}
 	}
 	return null;
 }
@@ -86,6 +94,13 @@ function rebuildStem(abselem, stem, newDir) {
 	}
 	stem.top = Math.max(stem.pitch, stem.pitch2);
 	stem.bottom = Math.min(stem.pitch, stem.pitch2);
+	// The first layout pass (setXSpacing → AbsoluteElement.setX) has already
+	// cascaded setX through the children, so stem.x was computed as
+	// (abselem.x + OLD stem.dx). Now that we changed stem.dx, the cached
+	// stem.x is stale and won't be refreshed by the remainder of the layout
+	// pipeline (setUpperAndLowerElements / layoutVoice don't re-cascade
+	// setX). Recompute stem.x here so it tracks the new dx.
+	stem.x = abselem.x + stem.dx;
 
 	if (abselem.heads) {
 		for (var h = 0; h < abselem.heads.length; h++) {
