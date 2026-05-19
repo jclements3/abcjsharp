@@ -27665,6 +27665,54 @@ function rebuildStem(abselem, stem, newDir) {
       abselem.heads[h].stemDir = newDir;
     }
   }
+  flipFlag(abselem, newDir, headW);
+}
+
+// Unbeamed short notes have a flag glyph (flags.u8th / flags.d8th, etc.)
+// added via abselem.addRight at engraving time. The glyph's name AND its
+// dx / pitch are baked in for the direction abcjs originally chose. When
+// rebuildStem flips the stem direction we must also swap the flag glyph
+// so it sits at the new stem tip instead of dangling on the wrong side
+// of the notehead (which reads as a "stem connected to nothing").
+//
+// Layout matches create-note-head.js:
+//   dir=up:   pos = topPitch + 7;     xdelta = notehead.w - 0.6
+//   dir=down: pos = bottomPitch - 7;  xdelta = 0
+function flipFlag(abselem, newDir, headW) {
+  var flag = findFlag(abselem);
+  if (!flag || !flag.c) return;
+  // flag.c looks like "flags.u8th" / "flags.d16th" / ...
+  var m = /^flags\.[ud](.+)$/.exec(flag.c);
+  if (!m) return; // not a regular up/down flag (ugrace/dgrace handled too if needed, but ignore here)
+  var kind = m[1]; // "8th", "16th", "32nd", "64th"
+  var newC = 'flags.' + (newDir === 'up' ? 'u' : 'd') + kind;
+  if (flag.c === newC) return;
+  flag.c = newC;
+  flag.name = newC;
+  if (newDir === 'up') {
+    flag.pitch = abselem.abcelem.maxpitch + 7;
+    flag.dx = headW - 0.6;
+  } else {
+    flag.pitch = abselem.abcelem.minpitch - 7;
+    flag.dx = 0;
+  }
+  // stem.x cached from the old dx; refresh from the new one.
+  flag.x = abselem.x + flag.dx;
+  flag.top = flag.pitch;
+  flag.bottom = flag.pitch;
+}
+function findFlag(abselem) {
+  if (!abselem) return null;
+  var arrays = [abselem.right, abselem.children, abselem.extra];
+  for (var a = 0; a < arrays.length; a++) {
+    var arr = arrays[a];
+    if (!arr) continue;
+    for (var i = 0; i < arr.length; i++) {
+      var ch = arr[i];
+      if (ch && typeof ch.c === 'string' && ch.c.indexOf('flags.') === 0) return ch;
+    }
+  }
+  return null;
 }
 function unifyOneLine(staffGroup) {
   if (!staffGroup || !staffGroup.staffs) return;
