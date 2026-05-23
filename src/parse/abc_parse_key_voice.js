@@ -824,8 +824,14 @@ var parseKeyVoice = {};
 		if (staffInfo.spacing) s.spacing_below_offset = staffInfo.spacing;
 		if (staffInfo.verticalPos) s.verticalPos = staffInfo.verticalPos;
 
-		if (staffInfo.name) {if (s.name) s.name.push(staffInfo.name); else s.name = [ staffInfo.name ];}
-		if (staffInfo.subname) {if (s.subname) s.subname.push(staffInfo.subname); else s.subname = [ staffInfo.subname ];}
+		// Index name/subname BY the voice's index within this staff (not push).
+		// The consumer (abc_parse_music.js) reads `staff.name[voice.index]`, so
+		// indexing here is what lets repeated `[V:N name="..."]` declarations
+		// actually update the label — `push` would just grow the array while
+		// the consumer keeps reading slot [voice.index] (always the first one).
+		var voiceIdx = multilineVars.voices[id].index;
+		if (staffInfo.name)    {if (!s.name)    s.name    = []; s.name[voiceIdx]    = staffInfo.name;}
+		if (staffInfo.subname) {if (!s.subname) s.subname = []; s.subname[voiceIdx] = staffInfo.subname;}
 
 		return setCurrentVoice(id);
 	};

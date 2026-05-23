@@ -630,7 +630,13 @@ function findLastBar(voice, start) {
 }
 
 function fixTitles(lines) {
-	// We might have name and subname defined. We now know what line everything is on, so we can determine which to use.
+	// We might have name and subname defined. We now know what line
+	// everything is on, so we can determine which to use.
+	// First system → name; subsequent systems → subname, falling back to
+	// name if no subname was given. The fallback lets a tune set a fresh
+	// `name=` on each per-line V: declaration and have the new label show
+	// on every system — used for drill / etude material where each line
+	// gets its own short staff label.
 	var firstMusicLine = true;
 	for (var i = 0; i < lines.length; i++) {
 		var line = lines[i];
@@ -641,11 +647,12 @@ function fixTitles(lines) {
 					var hasATitle = false;
 					for (var k = 0; k < staff.title.length; k++) {
 						if (staff.title[k]) {
-							staff.title[k] = (firstMusicLine) ? staff.title[k].name : staff.title[k].subname;
+							var pick = firstMusicLine
+								? (staff.title[k].name || staff.title[k].subname)
+								: (staff.title[k].subname || staff.title[k].name);
+							staff.title[k] = pick || '';
 							if (staff.title[k])
 								hasATitle = true;
-							else
-								staff.title[k] = '';
 						} else
 							staff.title[k] = '';
 					}

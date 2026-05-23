@@ -966,6 +966,13 @@ var parseDirective = {};
 			case "continueall":
 				multilineVars.continueall = true;
 				break;
+			case "nowrap":
+				// Per-tune opt-out from the responsive line-wrap pass in
+				// abc_tunebook_svg.js — keeps source `\n` breaks intact even
+				// when the caller passed a `wrap: { ... }` render option.
+				// `%%nowrap` (no arg) or `%%nowrap true` enables it.
+				multilineVars.nowrap = !tokens.length || tokens[0].token !== 'false';
+				break;
 			case "beginps":
 				line = tokenizer.nextLine();
 				while(line && line.indexOf('%%endps') !== 0) {

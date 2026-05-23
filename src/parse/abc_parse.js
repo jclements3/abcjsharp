@@ -595,6 +595,9 @@ var Parse = function() {
 			addHintMeasures();
 		}
 
+		// Expose %%nowrap directive on the tune so abc_tunebook_svg.js can
+		// skip its responsive wrap pass for this specific tune.
+		if (multilineVars.nowrap) tune.formatting.nowrap = true;
 		wrap.wrapLines(tune, multilineVars.lineBreaks, multilineVars.barNumbers);
 		if (switches.chordGrid) {
 			try {

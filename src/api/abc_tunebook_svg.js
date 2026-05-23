@@ -116,7 +116,9 @@ var renderAbc = function(output, abc, parserParams, engraverParams, renderParams
             div.setAttribute("style", "visibility: hidden;");
             document.body.appendChild(div);
         }
-        if (!removeDiv && params.wrap && params.staffwidth) {
+        // `%%nowrap` directive in the source overrides the caller's
+        // `wrap: { ... }` option: source line breaks are preserved as-is.
+        if (!removeDiv && params.wrap && params.staffwidth && !(tune.formatting && tune.formatting.nowrap)) {
             tune = doLineWrapping(div, tune, tuneNumber, abcString, params);
 	        return tune;
         }

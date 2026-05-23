@@ -945,7 +945,9 @@ var renderAbc = function renderAbc(output, abc, parserParams, engraverParams, re
       div.setAttribute("style", "visibility: hidden;");
       document.body.appendChild(div);
     }
-    if (!removeDiv && params.wrap && params.staffwidth) {
+    // `%%nowrap` directive in the source overrides the caller's
+    // `wrap: { ... }` option: source line breaks are preserved as-is.
+    if (!removeDiv && params.wrap && params.staffwidth && !(tune.formatting && tune.formatting.nowrap)) {
       tune = doLineWrapping(div, tune, tuneNumber, abcString, params);
       return tune;
     }
@@ -3297,6 +3299,10 @@ var Parse = function Parse() {
     if (switches.hint_measures) {
       addHintMeasures();
     }
+
+    // Expose %%nowrap directive on the tune so abc_tunebook_svg.js can
+    // skip its responsive wrap pass for this specific tune.
+    if (multilineVars.nowrap) tune.formatting.nowrap = true;
     wrap.wrapLines(tune, multilineVars.lineBreaks, multilineVars.barNumbers);
     if (switches.chordGrid) {
       try {
@@ -4484,6 +4490,13 @@ var parseDirective = {};
         break;
       case "continueall":
         multilineVars.continueall = true;
+        break;
+      case "nowrap":
+        // Per-tune opt-out from the responsive line-wrap pass in
+        // abc_tunebook_svg.js — keeps source `\n` breaks intact even
+        // when the caller passed a `wrap: { ... }` render option.
+        // `%%nowrap` (no arg) or `%%nowrap true` enables it.
+        multilineVars.nowrap = !tokens.length || tokens[0].token !== 'false';
         break;
       case "beginps":
         line = tokenizer.nextLine();
@@ -6464,11 +6477,20 @@ var parseKeyVoice = {};
     };
     if (staffInfo.spacing) s.spacing_below_offset = staffInfo.spacing;
     if (staffInfo.verticalPos) s.verticalPos = staffInfo.verticalPos;
+
+    // Index name/subname BY the voice's index within this staff (not push).
+    // The consumer (abc_parse_music.js) reads `staff.name[voice.index]`, so
+    // indexing here is what lets repeated `[V:N name="..."]` declarations
+    // actually update the label — `push` would just grow the array while
+    // the consumer keeps reading slot [voice.index] (always the first one).
+    var voiceIdx = multilineVars.voices[id].index;
     if (staffInfo.name) {
-      if (s.name) s.name.push(staffInfo.name);else s.name = [staffInfo.name];
+      if (!s.name) s.name = [];
+      s.name[voiceIdx] = staffInfo.name;
     }
     if (staffInfo.subname) {
-      if (s.subname) s.subname.push(staffInfo.subname);else s.subname = [staffInfo.subname];
+      if (!s.subname) s.subname = [];
+      s.subname[voiceIdx] = staffInfo.subname;
     }
     return setCurrentVoice(id);
   };
@@ -10412,7 +10434,13 @@ function findLastBar(voice, start) {
   return i;
 }
 function fixTitles(lines) {
-  // We might have name and subname defined. We now know what line everything is on, so we can determine which to use.
+  // We might have name and subname defined. We now know what line
+  // everything is on, so we can determine which to use.
+  // First system → name; subsequent systems → subname, falling back to
+  // name if no subname was given. The fallback lets a tune set a fresh
+  // `name=` on each per-line V: declaration and have the new label show
+  // on every system — used for drill / etude material where each line
+  // gets its own short staff label.
   var firstMusicLine = true;
   for (var i = 0; i < lines.length; i++) {
     var line = lines[i];
@@ -10423,8 +10451,9 @@ function fixTitles(lines) {
           var hasATitle = false;
           for (var k = 0; k < staff.title.length; k++) {
             if (staff.title[k]) {
-              staff.title[k] = firstMusicLine ? staff.title[k].name : staff.title[k].subname;
-              if (staff.title[k]) hasATitle = true;else staff.title[k] = '';
+              var pick = firstMusicLine ? staff.title[k].name || staff.title[k].subname : staff.title[k].subname || staff.title[k].name;
+              staff.title[k] = pick || '';
+              if (staff.title[k]) hasATitle = true;
             } else staff.title[k] = '';
           }
           if (!hasATitle) delete staff.title;
