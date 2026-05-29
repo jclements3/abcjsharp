@@ -55,6 +55,7 @@ var AbstractEngraver = function (getTextSize, tuneNumber, options) {
 	this.jazzchords = !!options.jazzchords
 	this.accentAbove = !!options.accentAbove
 	this.germanAlphabet = !!options.germanAlphabet
+	this.lyricsNoSpacing = !!options.lyricsNoSpacing;
 	this.reset();
 };
 
@@ -143,6 +144,7 @@ AbstractEngraver.prototype.createABCStaff = function (staffgroup, abcstaff, temp
 	staffgroup.getTextSize.updateFonts(abcstaff);
 	for (var v = 0; v < abcstaff.voices.length; v++) {
 		var voice = new VoiceElement(v, abcstaff.voices.length);
+		voice.durationOnlySpacing = this.lyricsNoSpacing;
 		if (v === 0) {
 			voice.barfrom = (abcstaff.connectBarLines === "start" || abcstaff.connectBarLines === "continue");
 			voice.barto = (abcstaff.connectBarLines === "continue" || abcstaff.connectBarLines === "end");
@@ -779,7 +781,7 @@ AbstractEngraver.prototype.addLyric = function (abselem, elem, voiceNumber) {
 	});
 	var lyricDim = this.getTextSize.calc(lyricStr, 'vocalfont', "lyric");
 	var position = elem.positioning ? elem.positioning.vocalPosition : 'below';
-	abselem.addCentered(new RelativeElement(lyricStr, 0, lyricDim.width, undefined, { type: "lyric", position: position, height: lyricDim.height / spacing.STEP, dim: this.getTextSize.attr('vocalfont', "lyric"), voiceNumber: voiceNumber }));
+	abselem.addCentered(new RelativeElement(lyricStr, 0, (this.lyricsNoSpacing ? 0 : lyricDim.width), undefined, { type: "lyric", position: position, height: lyricDim.height / spacing.STEP, dim: this.getTextSize.attr('vocalfont', "lyric"), voiceNumber: voiceNumber }));
 };
 
 AbstractEngraver.prototype.createNote = function (elem, nostem, isSingleLineStaff, voice) { //stem presence: true for drawing stemless notehead

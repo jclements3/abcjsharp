@@ -76,6 +76,7 @@ var EngraverController = function (paper, params) {
 		this.lineThickness = params.lineThickness;
 	if (params.chordGrid)
 		this.chordGrid = params.chordGrid;
+	this.lyricsNoSpacing = !!params.lyricsNoSpacing;
 	this.renderer.controller = this; // TODO-GD needed for highlighting
 	this.renderer.foregroundColor = params.foregroundColor ? params.foregroundColor : "currentColor";
 	if (params.ariaLabel !== undefined)
@@ -200,7 +201,8 @@ EngraverController.prototype.setupTune = function (abcTune, tuneNumber) {
 		jazzchords: this.jazzchords,
 		timeBasedLayout: this.timeBasedLayout,
 		accentAbove: this.accentAbove,
-		germanAlphabet: this.germanAlphabet
+		germanAlphabet: this.germanAlphabet,
+		lyricsNoSpacing: this.lyricsNoSpacing
 	});
 	this.engraver.setStemHeight(this.renderer.spacing.stemHeight);
 	this.engraver.measureLength = abcTune.getMeterFraction().num / abcTune.getMeterFraction().den;

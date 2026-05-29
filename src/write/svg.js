@@ -214,6 +214,42 @@ Svg.prototype.text = function (text, attr, target, spanAttr) {
 				line.appendChild(ts3);
 			}
 		}     
+		else if (lines[i].indexOf("⁄") !== -1 && !/[A-Za-z]/.test(lines[i].slice(0, lines[i].indexOf("⁄")))) {
+			// All-digit stack (no letter prefix): every ⁄-separated digit drawn on
+			// its own line, centered at the same x, small font, stepping down. Used
+			// for multi-finger labels (e.g. "1⁄4", "1⁄2⁄3", "1⁄2⁄3⁄4") so they form a
+			// narrow vertical column matching the chord's stacked noteheads.
+			var digits = lines[i].split("⁄");
+			var fx = attr.x ? attr.x : 0;
+			line.setAttribute("text-anchor", "middle");
+			line.setAttribute("style", "font-size:0.82em");
+			line.textContent = digits[0];
+			for (var di = 1; di < digits.length; di++) {
+				var dT = document.createElementNS(svgNS, 'tspan');
+				dT.setAttribute("x", fx);
+				dT.setAttribute("dy", "0.92em");
+				dT.textContent = digits[di];
+				line.appendChild(dT);
+			}
+		}
+		else if (lines[i].indexOf("⁄") !== -1) {
+			// Stacked figured-bass: digit before the fraction slash (U+2044) drawn
+			// directly OVER the digit after it, no slash. Super/subscripts normalized.
+			var SUPSUB = {'⁰':'0','¹':'1','²':'2','³':'3','⁴':'4','⁵':'5','⁶':'6','⁷':'7','⁸':'8','⁹':'9','₀':'0','₁':'1','₂':'2','₃':'3','₄':'4','₅':'5','₆':'6','₇':'7','₈':'8','₉':'9'};
+			var fi = lines[i].indexOf("⁄");
+			line.textContent = lines[i].slice(0, fi - 1);
+			var topT = document.createElementNS(svgNS, 'tspan');
+			topT.setAttribute("dy", "-0.35em");
+			topT.setAttribute("style", "font-size:0.62em");
+			topT.textContent = SUPSUB[lines[i][fi - 1]] || lines[i][fi - 1];
+			line.appendChild(topT);
+			var botT = document.createElementNS(svgNS, 'tspan');
+			botT.setAttribute("dy", "0.72em");
+			botT.setAttribute("dx", "-0.6em");
+			botT.setAttribute("style", "font-size:0.62em");
+			botT.textContent = SUPSUB[lines[i][fi + 1]] || lines[i][fi + 1];
+			line.appendChild(botT);
+		}
 		else 
     	{
 	      // MAE 9 May 2025 - For improved block text

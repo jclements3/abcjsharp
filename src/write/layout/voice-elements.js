@@ -15,6 +15,7 @@ VoiceElement.layoutEnded = function (voice) {
 };
 
 VoiceElement.getNextX = function (voice) {
+	if (voice.durationOnlySpacing) return voice.nextx;
 	return Math.max(voice.minx, voice.nextx);
 };
 
@@ -64,7 +65,7 @@ VoiceElement.layoutOneItem = function (x, spacing, voice, minPadding, firstVoice
 
 		}
 	}
-	var extraWidth = getExtraWidth(child, pad);
+	var extraWidth = voice.durationOnlySpacing ? pad : getExtraWidth(child, pad);
 	if (er < extraWidth) { // shift right by needed amount
 		// There's an exception if a bar element is after a Part element, there is no shift.
 		if (voice.i === 0 || child.type !== 'bar' || (voice.children[voice.i - 1].type !== 'part' && voice.children[voice.i - 1].type !== 'tempo'))
